@@ -21,6 +21,7 @@ def call(Map configMap){
             stage('read the version'){
                 steps{
                     script{
+                        sh "environment: $env"
                         def packageJson = readJSON file: 'package.json'
                         appVersion = packageJson.version
                         echo "application version: $appVersion"
@@ -50,9 +51,7 @@ def call(Map configMap){
 
                     sh """
                         aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${account_id}.dkr.ecr.${region}.amazonaws.com
-
                         docker build -t ${account_id}.dkr.ecr.${region}.amazonaws.com/${project}-${component}:${appVersion} .
-
                         docker push ${account_id}.dkr.ecr.${region}.amazonaws.com/${project}-${component}:${appVersion}
                     """
                 }
@@ -99,7 +98,7 @@ def call(Map configMap){
                                 sh """
                                 aws eks update-kubeconfig --region ${region} --name ${project}-dev
                                 helm rollback backend -n ${project} 0
-                                sleep(60)
+                                sleep 60
                                 """
                                 rollbackStatus = sh(script: "kubectl rollout status deployment/backend -n expense --timeout=2m || true", returnStdout: true).trim()
                                 if(rollbackStatus.contains('successfully rolled out')){
